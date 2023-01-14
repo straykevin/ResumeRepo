@@ -32,21 +32,25 @@ function Destructibles.new(instance)
 end
 
 function Destructibles:GetDestructibleFromModel(model)
-    for _, object in pairs(DestructiblesTable) do
-        if object.Instance == model then
-            return object
-        end
-    end
+    return DestructiblesTable[model]
 end
 
+function Destructibles:Reveal(bool)
+	for _, part in pairs(self.Instance:GetDescendants()) do
+	    if part:IsA("BasePart") and part.Name ~= "HitBox" then
+		part.CanCollide = bool
+		part.Transparency = (bool and 0) or 1
+	    end
+	end	
+end
 
 function Destructibles:Init()
     -- Sets attribute health
     self.Instance:SetAttribute("Health", self.MaxHP)
 
-    -- Determine if this is not a resource that drops. (All classes should be able to destroy it otherwise)
+    -- Determine if this is not a resource that drops particular assets. (All classes should be able to destroy it otherwise)
     if self.Name ~= "Tree" and self.Name ~= "CrystalRock" then
-        self.Instance:SetAttribute("WorkerInteractable", true)
+        self.Instance:SetAttribute("WorkerInteractable", true) -- Makes it so that workers can repair and perform misc. actions against it.
     end
     
     local debounce = false
@@ -57,6 +61,7 @@ function Destructibles:Init()
                 self.HitSound.SoundId = "rbxassetid://" .. self.Sounds[self.randEffect]
             end
             
+	-- Plays tree hit animation
             if self.HitAnimTrack then
                 self.HitAnimTrack:Play()
             end
@@ -69,15 +74,10 @@ function Destructibles:Init()
                 self.HitSound:Play()
             end
 
-            -- When the destructible's hp is 0 then the destructible "disapears", drops a resource, then reappears after a certain amount of time
+            -- When the destructible's hp is 0 then the destructible "disappears", drops a resource, then reappears after a certain amount of time
             if currentHp <= 0 and debounce == false then
                 debounce = true
-                for _, part in pairs(self.Instance:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = false
-                        part.Transparency = 1
-                    end
-                end
+		self:Reveal(true)
 
                 if self.DropResource then
                     self:DropResource()
@@ -89,14 +89,7 @@ function Destructibles:Init()
                 task.wait(RESPAWN_TIME)
 
                 self.Instance:SetAttribute("Health", self.MaxHP)
-                for _, part in pairs(self.Instance:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        if part.Name ~= 'HitBox' then
-                            part.CanCollide = true
-                            part.Transparency = 0
-                        end
-                    end
-                end
+		self:Reveal(false)
                 
                 debounce = false
             end
