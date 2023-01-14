@@ -42,14 +42,6 @@ function Destructibles.new(instance)
     return newObject
 end
 
-function Destructibles:Reveal(bool)
-	for _, part in pairs(self.Instance:GetDescendants()) do
-	    if part:IsA("BasePart") and part.Name ~= "HitBox" then
-		part.CanCollide = bool
-		part.Transparency = (bool and 0) or 1
-	    end
-	end	
-end
 
 function Destructibles:Init()
     -- Sets attribute health
@@ -103,5 +95,16 @@ function Destructibles:Init()
         
     end)
 end
+
+function Destructibles:Reveal(bool)
+	for _, part in pairs(self.Instance:GetDescendants()) do
+	    if part:IsA("BasePart") and part.Name ~= "HitBox" then
+		part.CanCollide = bool
+		part.Transparency = (bool and 0) or 1
+	    end
+	end	
+end
+
+
 
 return Destructibles
