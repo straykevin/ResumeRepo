@@ -1,6 +1,7 @@
+-- Date: July, 2022
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-- References other module scripts
+-- References other module scripts
 local UsefulFunctions = require(ReplicatedStorage.ModuleScripts.UsefulFunctions)
 local Particles = require(ReplicatedStorage.ModuleScripts.Particles)
 
