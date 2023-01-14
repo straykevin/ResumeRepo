@@ -1,4 +1,5 @@
 -- DATE: July, 2022
+-- Updated: 1/14/2023
 
 -- ROBLOX APIs
 local RunService = game:GetService("RunService")
@@ -6,19 +7,15 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
--- Module Scripts
+-- Required Dependencies
 local Classes = require(ReplicatedStorage.ModuleScripts.Classes)
 local Assets = ReplicatedStorage.Assets
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Particles = require(ReplicatedStorage.ModuleScripts.Particles)
 local Sounds = require(ReplicatedStorage.ModuleScripts.Sounds)
+local Destructibles = require(ServerScriptService.ModuleScripts.Game.Destructibles)
 
-
-local PlayerManager
-
-if RunService:IsServer() then
-    PlayerManager = require(ServerScriptService.ModuleScripts.Utilities.PlayerManager)
-end
+local PlayerManager = (RunService:IsServer() and require(ServerScriptService.ModuleScripts.Utilities.PlayerManager)) or nil
 
 
 local Worker = {}
@@ -55,24 +52,22 @@ end
 function Worker:OnHitExtra(hit)
     local resourceNode = hit.Parent
   
+    -- Behavior for resources that only workers are able to hit and otherwise not perform any other action on aside from damaging it.
     if resourceNode:IsA("Model") and not resourceNode:GetAttribute("WorkerInteractable") then
         local CurrentHP = resourceNode:GetAttribute("Health")
         if CurrentHP and CurrentHP > 0 then
             print(self.Character, "has hit a resource:",resourceNode)
 
-            local plr = game.Players:GetPlayerFromCharacter(resourceNode)
 
-            if plr then
-                Remotes.PlayerHitEvent:FireClient(plr, resourceNode, self.Damage * self.DamageMultiplier)
-            end
-
+            -- player feedback that they've hit a resource node.
             Remotes.PlayerHitEvent:FireClient(Players:GetPlayerFromCharacter(self.Character), resourceNode, self.Damage * self.DamageMultiplier)
             resourceNode:SetAttribute("Health", CurrentHP - (self.Damage * self.DamageMultiplier))
 
-            local Destructibles = require(ServerScriptService.ModuleScripts.Game.Destructibles)
-
+            
+            -- Perform Player-Related Updates. All Destructibles-related events and updates are within Destructibles.lua
             local hitInstance = Destructibles:GetDestructibleFromModel(resourceNode)
             
+            -- Increment's players statistics to end-game results.
             if hitInstance then
                 if hitInstance.Name == "Tree" and hitInstance.Instance:GetAttribute("Health") <= 0 then
                     PlayerManager:IncrementWood(game.Players:GetPlayerFromCharacter(self.Character), 1)
@@ -92,7 +87,7 @@ function Worker:CastPrimary()
     self.PrimaryParticle1 = Particles.new("LightRayCharge", self.Tool.BladeHolder)
 end
 
-
+-- Toggles worker repair + upgrade action
 function Worker:CastSecondary(bool)
 
     if self.WorkerWorking then
@@ -110,6 +105,7 @@ function Worker:CastSecondary(bool)
             return (a.Position - hrp.Position).Magnitude < (b.Position - hrp.Position).Magnitude
         end)
 
+        -- Determines closest model to player
         local closestModel = nil
         for _, v in pairs(partsAroundPlayer) do -- It's in distance order, so get the first Model with the attribute
             if v.Parent:GetAttribute("WorkerInteractable") then
@@ -128,9 +124,9 @@ function Worker:CastSecondary(bool)
         end
 
         local SplitString = string.split(string.sub(string.gsub(closestModel.Name, "(%u)", " %1"), 2, -1), " ")
-        if SplitString[1] == "Machine" then
+        if SplitString[1] == "Machine" then -- Machines cannot be repaired, only upgraded
             self:Upgrade(closestModel)
-        else
+        else -- Default action for worker-interactables objects.
             self:Repair(closestModel)
         end
 
@@ -156,7 +152,7 @@ function Worker:Repair(repairModel)
 
         
         local object 
-        
+        -- Determine whether we're dealing with a gate or a tunnel. 
         object = require(ServerScriptService.ModuleScripts.Game.Destructibles.Gate):GetGate(repairModel) -- NEED TO CHANGE THIS TO ACCOMODATE FUTURE REPAIR OBJECTS
         if not object then
             object = require(ServerScriptService.ModuleScripts.Game.Destructibles.Tunnel):GetTunnel(repairModel)
@@ -176,7 +172,7 @@ function Worker:Repair(repairModel)
                 self.RepairSound:Play()
 
                 self.WorkerWorking = RunService.Heartbeat:Connect(function(dt)
-
+                    -- Default Repairing behavior. 1st Case is the action of decrementing the essence count and increment hp of target object.
                     if playerInfo.Essence >= dt * self.RepairCost and repairModel:GetAttribute("Health") < object.MaxHP then
                         PlayerManager:IncrementEssence(player, -(dt * self.RepairCost))
                         repairModel:SetAttribute("Health", repairModel:GetAttribute("Health") + (dt * self.RepairRate))
@@ -194,6 +190,7 @@ function Worker:Repair(repairModel)
                             else
                                 warn("Sound was not found!")
                             end
+                                
                             self.WorkerWorking:Disconnect()
                             self:EndSecondAnim({})
                         end
