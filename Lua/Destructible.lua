@@ -1,15 +1,26 @@
--- Date: July, 2022
+-- Date Created: July, 2022
+-- Updated: January, 2023
+
+-- API Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- References other module scripts
+-- Required Dependencies
 local UsefulFunctions = require(ReplicatedStorage.ModuleScripts.UsefulFunctions)
 local Particles = require(ReplicatedStorage.ModuleScripts.Particles)
+
+-- PRIVATE LOCAL VARIABLES
+local RESPAWN_TIME = 30
 
 local Destructibles = {}
 local DestructiblesTable = {}
 
 Destructibles.__index = Destructibles
-local RESPAWN_TIME = 30
+
+
+
+function Destructibles:GetDestructibleFromModel(model)
+    return DestructiblesTable[model]
+end
 
 function Destructibles.new(instance)
     local newObject = {}
@@ -29,10 +40,6 @@ function Destructibles.new(instance)
     DestructiblesTable[newObject.Instance] = newObject
 
     return newObject
-end
-
-function Destructibles:GetDestructibleFromModel(model)
-    return DestructiblesTable[model]
 end
 
 function Destructibles:Reveal(bool)
