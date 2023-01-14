@@ -282,7 +282,11 @@ end
 	FUNCTION NAME: Constructor 
 	PARAMETERS: Models/Parts/Tools, CFrame/Model, table, Player/String
 	DESCRIPTION: Creates an entity using a template instance and various (optional) parameters.
-	
+
+	An entity is a model under workspace waiting to be interacted w/ by a player.
+	Could be building material, tools, or money waiting to be picked up.
+	An entity object manages an asset's lifetime on the server.
+
 	RETURNS: Entity Object
 ]]
 function Entity.new(instance: Instance, cframe, currAttributes: table, owner) -- instance: Instance (tool, model, part), cframe: Last Known Saved Location
@@ -350,7 +354,7 @@ function Entity.new(instance: Instance, cframe, currAttributes: table, owner) --
 	
 	local ActionText = instance:GetAttribute("ActionText")
 
-	-- Applies Proximity Prompt Behavior based on previous context (344 - 351)
+	-- Applies Proximity Prompt Behavior based on previous context (Lines 344 - 351)
 	if isTool then
 		
 		local ProximityPrompt = Instance.new("ProximityPrompt")
@@ -448,6 +452,7 @@ function Entity.new(instance: Instance, cframe, currAttributes: table, owner) --
 		newEntity.ProximityPrompt = ProximityPrompt
 	end
 	
+	--[[Process of putting entity object under workspace w/ applicable functionality.]]
 	if attributes["Anchored"] then
 		for _, part in pairs(newEntity.Instance:GetChildren()) do
 			if part:IsA("BasePart") then
@@ -569,18 +574,21 @@ end
 
 --[[
 	FUNCTION NAME: PivotTo 
-	PARAMETERS: cframe/model/table
-	DESCRIPTION: Manages unique behavior amongst various data types related to pivoting.
-	In the end, object should be placed at a particular cframe.
+	PARAMETERS: cframe/character/table
+	DESCRIPTION: Manages unique cframe pivoting behavior amongst various data types related to pivoting.
+	In the end, object should be placed at a designated cframe.
 	
+	Player's Character -> Places item at character's head lookvector. Prevents items from falling out of the map and glitching through walls.
+	Table -> Reads table and moves cframe	
+
 	RETURNS: N/A
 ]]
 function Entity:PivotTo(cframe)
 	if cframe then
 
-		--*****if it's a model then why need to check if it's a cframe?*****
-		if typeof(cframe) ~= "CFrame" and cframe:IsA("Model") then -- if uses character as a reference..?
-
+		-- Required to check if object is a cframe, otherwise, errors that cframe does not have :IsA() method.
+		if typeof(cframe) ~= "CFrame" and cframe:IsA("Model") then 
+	
 			local tCFrame
 			local offset = Vector3.new(0, self.Instance.PrimaryPart.Size.Y / 2, 0)
 
